@@ -1,55 +1,43 @@
-import aiohttp
 import asyncio
+import aiomysql
 
-class APIClient:
-    def __init__(self, base_url: str):
-        self.base_url = base_url
-
-    async def fetch(self, endpoint: str, params: dict = None):
-        """Виконує GET-запит до API."""
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get(f"{self.base_url}{endpoint}", params=params) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    return data
-            except aiohttp.ClientError as e:
-                print(f"Помилка клієнта: {e}")
-            except Exception as e:
-                print(f"Невідома помилка: {e}")
-
-    async def post(self, endpoint: str, payload: dict):
-        """Виконує POST-запит до API."""
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.post(f"{self.base_url}{endpoint}", json=payload) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    return data
-            except aiohttp.ClientError as e:
-                print(f"Помилка клієнта: {e}")
-            except Exception as e:
-                print(f"Невідома помилка: {e}")
-
-# Приклад використання:
-async def main():
-    base_url = "https://jsonplaceholder.typicode.com"
-    client = APIClient(base_url)
-
-    # GET-запит
-    posts = await client.fetch("/posts", params={"userId": 1})
-    print("GET-запит:", posts)
-
-    # POST-запит
-    new_post = {
-        "title": "foo",
-        "body": "bar",
-        "userId": 1,
+async def fetch_users():
+    """
+    Асинхронна функція для отримання інформації про користувачів із бази даних MySQL.
+    """
+    
+    db_config = {
+        'host': 'localhost',       
+        'port': 3306,              
+        'user': 'your_username',  
+        'password': 'your_password',  
+        'db': 'your_database',     
     }
-    created_post = await client.post("/posts", payload=new_post)
-    print("POST-запит:", created_post)
 
-# Запуск головної функції
+    
+    try:
+        conn = await aiomysql.connect(**db_config)
+        async with conn.cursor() as cursor:
+            
+            query = "SELECT id, name, email FROM users;"
+            await cursor.execute(query)
+
+            
+            result = await cursor.fetchall()
+
+            
+            for row in result:
+                print(f"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}")
+
+    except aiomysql.MySQLError as e:
+        print(f"Помилка MySQL: {e}")
+
+    finally:
+        
+        conn.close()
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(fetch_users())
+
 
